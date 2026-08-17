@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
-from relay_control.config import EvidenceSource, MarginDirection, MarginPolicy
+from relay_control.config import (
+    EvidenceSource,
+    MarginAggregation,
+    MarginDirection,
+    MarginPolicy,
+)
 from relay_control.model import Estimate, RuntimeMode
 from relay_control.quality import ResolvedSignal
 
@@ -66,14 +71,25 @@ def evaluate_margins(
     unavailable: list[str] = []
 
     for name, policy in policies.items():
-        signal = resolved[policy.role]
-        if not signal.usable or signal.sample is None:
+        signals = [resolved[role] for role in policy.roles]
+        if any(not signal.usable or signal.sample is None for signal in signals):
             unavailable.append(name)
             continue
-        if policy.direction is MarginDirection.ABOVE:
-            margin = (signal.sample.value - policy.boundary) / policy.sigma
+        values = [
+            signal.sample.value
+            for signal in signals
+            if signal.sample is not None
+        ]
+        if policy.aggregation is MarginAggregation.SUM:
+            value = sum(values)
+        elif policy.aggregation is MarginAggregation.MEAN:
+            value = sum(values) / len(values)
         else:
-            margin = (policy.boundary - signal.sample.value) / policy.sigma
+            value = max(values)
+        if policy.direction is MarginDirection.ABOVE:
+            margin = (value - policy.boundary) / policy.sigma
+        else:
+            margin = (policy.boundary - value) / policy.sigma
         margins[name] = margin
 
     if mode is not RuntimeMode.NORMAL or unavailable or not margins:

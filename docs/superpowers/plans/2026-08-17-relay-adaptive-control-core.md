@@ -48,7 +48,7 @@
 - Create: `tests/helpers.py`
 - Create: `tests/test_config_quality.py`
 
-- [ ] **Step 1: Write failing contract and configuration tests**
+- [x] **Step 1: Write failing contract and configuration tests**
 
 Create tests that require dynamic frames and reject an unsafe or incomplete configuration:
 
@@ -71,7 +71,7 @@ class ConfigContractTests(unittest.TestCase):
             parse_config(raw)
 ```
 
-- [ ] **Step 2: Run the tests and verify RED**
+- [x] **Step 2: Run the tests and verify RED**
 
 Run:
 
@@ -81,7 +81,7 @@ PYTHONPATH=src /Users/bofanliu/.cache/codex-runtimes/codex-primary-runtime/depen
 
 Expected: import failure because `relay_control.model` and `relay_control.config` do not exist.
 
-- [ ] **Step 3: Implement stable contracts and strict configuration**
+- [x] **Step 3: Implement stable contracts and strict configuration**
 
 Implement these public shapes without vendor-specific fields:
 
@@ -122,7 +122,7 @@ class SensorFrame:
 
 Define immutable configuration records for signal bindings, capability alternatives, task requirements, evidence sources, margin policies, curves, adaptive gains, seat parameters, wheel parameters, and command limits. `load_config(path)` must call `tomllib.load`, then `parse_config(mapping)`. Validation must require every field used by control, finite numeric values, ordered curves, positive masses/damping/scales, `k_up > k_down > 0`, and `metadata.human_use == false`.
 
-- [ ] **Step 4: Add a complete synthetic TOML configuration**
+- [x] **Step 4: Add a complete synthetic TOML configuration**
 
 The file must declare `metadata.configuration_id = "synthetic-demo-v1"`, `metadata.human_use = false`, all semantic bindings, capability alternatives, task requirements, estimator evidence, quality margins, device and support curves, adaptive gains, wheel geometry/admittance, and command limits. It must begin with:
 
@@ -134,7 +134,7 @@ version = 1
 human_use = false
 ```
 
-- [ ] **Step 5: Run tests, compile the package, and commit**
+- [x] **Step 5: Run tests, compile the package, and commit**
 
 Run:
 
@@ -159,7 +159,7 @@ git commit -m "feat: define control contracts and configuration"
 - Create: `src/relay_control/estimation.py`
 - Modify: `tests/test_config_quality.py`
 
-- [ ] **Step 1: Write failing degradation and fusion tests**
+- [x] **Step 1: Write failing degradation and fusion tests**
 
 Add these behaviors:
 
@@ -186,11 +186,11 @@ def test_fusion_renormalizes_available_sources(self) -> None:
     self.assertNotIn("camera.posture_margin", estimate.contributors)
 ```
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
 Run the four new tests. Expected: import failure because quality and estimation modules do not exist.
 
-- [ ] **Step 3: Implement signal resolution and capability evaluation**
+- [x] **Step 3: Implement signal resolution and capability evaluation**
 
 Implement an immutable `ResolvedSignal(role, sample, usable, reason)` record. Add
 `resolve_signals(frame, config, now_ns) -> Mapping[str, ResolvedSignal]` and
@@ -199,7 +199,7 @@ only public functions in this module.
 
 Resolution must reject wrong units, stale timestamps, low confidence, non-finite values, and nonempty hard quality flags. A capability is available when any declared alternative group has all usable roles. Missing required capability selects its configured loss mode. Missing optional capability selects `DEGRADED_HOLD`. Severity order is `NORMAL < DEGRADED_HOLD < CONTROLLED_STOP < SAFE_HOLD`.
 
-- [ ] **Step 4: Implement configured evidence and margin calculation**
+- [x] **Step 4: Implement configured evidence and margin calculation**
 
 Implement weighted evidence fusion by excluding unusable inputs and renormalizing remaining weights. Return value, confidence, and contributors. Implement generic margin policies:
 
@@ -211,7 +211,7 @@ quality_gate = clip(min(all_available_margins, data_margin), 0.0, 1.0)
 
 When quality mode is not `NORMAL`, `data_margin` and `quality_gate` must be zero. Missing optional margins must never be interpreted as favorable evidence.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 Run the focused tests and the whole current suite. Expected: all pass.
 
@@ -228,7 +228,7 @@ git commit -m "feat: fuse partial sensor evidence safely"
 - Create: `src/relay_control/controllers.py`
 - Create: `tests/test_controllers.py`
 
-- [ ] **Step 1: Write failing adaptive assistance tests**
+- [x] **Step 1: Write failing adaptive assistance tests**
 
 ```python
 def test_progress_shortfall_increases_assistance(self) -> None:
@@ -247,11 +247,11 @@ def test_assistance_is_bounded_for_random_finite_inputs(self) -> None:
         self.assertLessEqual(result, ADAPTIVE.alpha_max)
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Run `tests.test_controllers`. Expected: import failure because controllers do not exist.
 
-- [ ] **Step 3: Implement curves, adaptive law, and seat control**
+- [x] **Step 3: Implement curves, adaptive law, and seat control**
 
 Implement clamped piecewise-linear interpolation and:
 
@@ -265,7 +265,7 @@ def update_assistance(alpha, progress_margin, quality_gate, dt_s, cfg):
 
 `SeatController.step()` must calculate device compensation by seat angle, phase support by continuous phase, multiply human support by intent confidence and `alpha`, add descent damping only for excessive descent speed, and return separate device-compensation and rehabilitation-assistance trace fields.
 
-- [ ] **Step 4: Write failing wheel tests, then implement admittance**
+- [x] **Step 4: Write failing wheel tests, then implement admittance**
 
 Tests must prove equal forward forces produce forward wheel speed, right-minus-left force produces yaw, zero force decays speed, vertical force does not propel, and output respects speed and slew limits.
 
@@ -280,7 +280,7 @@ left = (v - 0.5 * cfg.track_width_m * yaw) / cfg.wheel_radius_m
 
 Use a configured stop deceleration during `CONTROLLED_STOP`; return zero wheel speeds and a brake request during `SAFE_HOLD`.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 Run controller tests and all current tests. Expected: all pass.
 
@@ -298,7 +298,7 @@ git commit -m "feat: implement seat assistance and wheel admittance"
 - Create: `src/relay_control/safety.py`
 - Create: `tests/test_engine_safety.py`
 
-- [ ] **Step 1: Write failing engine behavior tests**
+- [x] **Step 1: Write failing engine behavior tests**
 
 ```python
 def test_optional_loss_still_produces_executable_seat_candidate(self) -> None:
@@ -317,15 +317,15 @@ def test_transport_does_not_update_rehabilitation_assistance(self) -> None:
     self.assertEqual(engine.state.assistance_alpha, before)
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: import failure because engine and safety modules do not exist.
 
-- [ ] **Step 3: Implement the deterministic engine pipeline**
+- [x] **Step 3: Implement the deterministic engine pipeline**
 
 `ControlEngine.step(ControlInput)` must execute resolution, task quality, evidence fusion, progress and quality margins, task controller selection, state update, and trace generation in that order. It must return `ControlDecision` without I/O. It must reject nonpositive or excessive `dt_s`, nonmonotonic time, and invalid task transitions by returning a safe-hold candidate with a reason rather than raising from the control loop.
 
-- [ ] **Step 4: Write failing safety tests, then implement the guard**
+- [x] **Step 4: Write failing safety tests, then implement the guard**
 
 Tests must require:
 
@@ -344,7 +344,7 @@ def test_nonfinite_candidate_is_rejected(self) -> None:
 
 The guard must validate expiry, sequence monotonicity, finite values, interlocks, stop input, actuator health, prescription task permission, and configured torque/wheel limits. It returns a distinct immutable `SafeCommand`; actuator interfaces must not accept `ControlCandidate`.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 Run engine and safety tests, then the complete suite. Expected: all pass.
 
@@ -363,7 +363,7 @@ git commit -m "feat: add deterministic engine and safety guard"
 - Create: `src/relay_control/runtime.py`
 - Create: `tests/test_ports_runtime.py`
 
-- [ ] **Step 1: Write failing adapter and runtime tests**
+- [x] **Step 1: Write failing adapter and runtime tests**
 
 ```python
 def test_runtime_calls_actuator_only_with_safe_command(self) -> None:
@@ -388,11 +388,11 @@ def test_recorded_frames_replay_deterministically(self) -> None:
     self.assertEqual(first.decision_traces, second.decision_traces)
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: import failure because ports, adapters, and runtime do not exist.
 
-- [ ] **Step 3: Define the external interfaces and in-memory adapters**
+- [x] **Step 3: Define the external interfaces and in-memory adapters**
 
 ```python
 class SensorPort(Protocol):
@@ -410,11 +410,11 @@ class AuditPort(Protocol):
 
 Implement `InMemorySensorAdapter`, `SequenceSensorAdapter`, `FaultInjectingSensorAdapter`, `InMemoryActuatorAdapter`, and `ListAuditAdapter`. The fault adapter must support remove, stale, confidence, flag, and value overrides without changing engine code.
 
-- [ ] **Step 4: Implement recording, replay, and one-cycle runtime**
+- [x] **Step 4: Implement recording, replay, and one-cycle runtime**
 
 Use JSON Lines with explicit schema version. `DeviceRuntime.cycle()` reads one frame, calls the engine, calls the safety guard, sends only the resulting `SafeCommand` to the actuator, appends a bounded audit event, and returns a `RuntimeCycleResult`. Exceptions from sensor or actuator adapters become structured safe-hold or actuator-fault results; they must not escape the runtime loop.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 Run runtime tests and the complete suite. Expected: all pass.
 
@@ -431,7 +431,7 @@ git commit -m "feat: add replaceable runtime adapters and replay"
 - Create: `src/relay_control/agent.py`
 - Create: `tests/test_agent.py`
 
-- [ ] **Step 1: Write failing Agent authority tests**
+- [x] **Step 1: Write failing Agent authority tests**
 
 ```python
 def test_agent_cannot_submit_actuator_setpoint(self) -> None:
@@ -449,15 +449,15 @@ def test_agent_stop_is_high_priority_but_still_has_no_actuator_access(self) -> N
     self.assertFalse(hasattr(gateway, "actuator"))
 ```
 
-- [ ] **Step 2: Run and verify RED**
+- [x] **Step 2: Run and verify RED**
 
 Expected: import failure because the Agent module does not exist.
 
-- [ ] **Step 3: Implement the high-level gateway**
+- [x] **Step 3: Implement the high-level gateway**
 
 Validate protocol major version, request ID, agent ID, issued/expiry times, request type, payload size, and idempotency. Support only `QUERY_STATUS`, `REQUEST_TASK`, `PAUSE_TASK`, `STOP_TASK`, `SUBMIT_HEALTH_CONTEXT`, and `SUBMIT_PARAMETER_SUGGESTION`. Recursively reject keys containing torque, speed, velocity, position, brake, current, PWM, or actuator setpoint semantics. Return an immutable high-level `AgentIntent`; do not import ports or adapters.
 
-- [ ] **Step 4: Run tests and commit**
+- [x] **Step 4: Run tests and commit**
 
 Run Agent tests and the complete suite. Expected: all pass.
 
@@ -476,15 +476,15 @@ git commit -m "feat: add constrained Agent gateway"
 - Modify: `src/relay_control/__init__.py`
 - Modify: `tests/test_ports_runtime.py`
 
-- [ ] **Step 1: Add a failing synthetic scenario test**
+- [x] **Step 1: Add a failing synthetic scenario test**
 
 Require one scenario to run normal standing, remove camera and heart-rate signals while continuing in degraded hold, run gait force input, remove handle intent to reach controlled stop, and finally assert safe hold after an emergency stop. The test must verify every executed actuator value is finite and bounded.
 
-- [ ] **Step 2: Run the scenario test and verify RED**
+- [x] **Step 2: Run the scenario test and verify RED**
 
 Expected: failure because the demo scenario entry point does not exist.
 
-- [ ] **Step 3: Implement the demo and README**
+- [x] **Step 3: Implement the demo and README**
 
 The demo command:
 
@@ -494,7 +494,7 @@ PYTHONPATH=src /Users/bofanliu/.cache/codex-runtimes/codex-primary-runtime/depen
 
 must print JSON summaries for `NORMAL`, `DEGRADED_HOLD`, `CONTROLLED_STOP`, and `SAFE_HOLD`, then exit zero. The README must lead with the non-clinical warning, explain module interfaces, list supported degradation behavior, show the demo and test commands, and give concrete adapter integration examples without claiming real-time or medical readiness.
 
-- [ ] **Step 4: Run fresh full verification**
+- [x] **Step 4: Run fresh full verification**
 
 Run:
 
@@ -507,7 +507,7 @@ git diff --check
 
 Expected: zero test failures, compilation exit zero, all four runtime modes in demo output, and no whitespace errors.
 
-- [ ] **Step 5: Audit requirements and commit**
+- [x] **Step 5: Audit requirements and commit**
 
 Check every requirement in the approved design against a test or README section. Confirm that no module except `DeviceRuntime` calls `ActuatorPort.apply`, no Agent module imports an actuator type, missing values are never converted to zero, and no sample configuration permits human use.
 

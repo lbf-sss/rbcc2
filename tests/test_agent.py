@@ -86,6 +86,16 @@ class AgentGatewayTests(unittest.TestCase):
         self.assertIn("agent_not_allowed", untrusted.reasons)
         self.assertIn("request_expired", expired.reasons)
 
+    def test_rejected_request_cannot_poison_idempotency_cache(self) -> None:
+        rejected = self.gateway.handle(
+            request("QUERY_STATUS", {}, agent_id="other-agent")
+        )
+
+        accepted = self.gateway.handle(request("QUERY_STATUS", {}))
+
+        self.assertEqual(rejected.status, AgentResponseStatus.REJECTED)
+        self.assertEqual(accepted.status, AgentResponseStatus.COMPLETED)
+
     def test_duplicate_request_is_idempotent(self) -> None:
         original = request("PAUSE_TASK", {})
 

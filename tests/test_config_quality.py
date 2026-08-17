@@ -52,6 +52,14 @@ class SignalQualityTests(unittest.TestCase):
         self.assertEqual(result.mode, RuntimeMode.DEGRADED_HOLD)
         self.assertIn("optional_capability_unavailable:hand_quality", result.reasons)
 
+    def test_missing_right_hand_compensation_also_selects_degraded_hold(self) -> None:
+        frame = frame_without("sim.handle.right.vertical")
+
+        result = evaluate_task_quality(Task.STAND_UP, frame, self.config, NOW_NS)
+
+        self.assertEqual(result.mode, RuntimeMode.DEGRADED_HOLD)
+        self.assertIn("optional_capability_unavailable:hand_quality", result.reasons)
+
     def test_alternative_phase_evidence_keeps_capability_available(self) -> None:
         frame = frame_without("sim.imu.trunk_pitch")
 
@@ -115,6 +123,16 @@ class SignalQualityTests(unittest.TestCase):
 
         self.assertEqual(margins.gate, 0.0)
         self.assertIn("posture", margins.unavailable)
+
+    def test_hand_margin_uses_combined_vertical_force(self) -> None:
+        frame = valid_frame()
+        quality = evaluate_task_quality(Task.STAND_UP, frame, self.config, NOW_NS)
+
+        margins = evaluate_margins(
+            self.config.quality_margins, quality.resolved, quality.mode
+        )
+
+        self.assertAlmostEqual(margins.margins["hand"], 0.4)
 
     def test_config_requires_synthetic_warning(self) -> None:
         raw = synthetic_config_dict()

@@ -68,7 +68,7 @@ def synthetic_config_dict() -> dict[str, Any]:
                 "loss_mode": "DEGRADED_HOLD",
             },
             "hand_quality": {
-                "alternatives": [["left_handle_vertical"]],
+                "alternatives": [["left_handle_vertical", "right_handle_vertical"]],
                 "loss_mode": "DEGRADED_HOLD",
             },
         },
@@ -102,10 +102,10 @@ def synthetic_config_dict() -> dict[str, Any]:
             ],
         },
         "quality_margins": {
-            "participation": {"role": "affected_load", "boundary": 100.0, "sigma": 100.0, "direction": "ABOVE"},
-            "hand": {"role": "left_handle_vertical", "boundary": 100.0, "sigma": 100.0, "direction": "BELOW"},
-            "posture": {"role": "posture_margin", "boundary": 0.0, "sigma": 1.0, "direction": "ABOVE"},
-            "fatigue": {"role": "fatigue_margin", "boundary": 0.0, "sigma": 1.0, "direction": "ABOVE"},
+            "participation": {"roles": ["affected_load"], "aggregation": "MEAN", "boundary": 100.0, "sigma": 100.0, "direction": "ABOVE"},
+            "hand": {"roles": ["left_handle_vertical", "right_handle_vertical"], "aggregation": "SUM", "boundary": 100.0, "sigma": 100.0, "direction": "BELOW"},
+            "posture": {"roles": ["posture_margin"], "aggregation": "MEAN", "boundary": 0.0, "sigma": 1.0, "direction": "ABOVE"},
+            "fatigue": {"roles": ["fatigue_margin"], "aggregation": "MEAN", "boundary": 0.0, "sigma": 1.0, "direction": "ABOVE"},
         },
         "adaptive": {
             "k_up": 0.8,

@@ -13,6 +13,7 @@ from relay_control.adapters import (
     SequenceSensorAdapter,
 )
 from relay_control.config import parse_config
+from relay_control.demo import run_synthetic_scenario
 from relay_control.model import (
     OperatorInput,
     RuntimeMode,
@@ -50,6 +51,24 @@ def runtime_for(sensor) -> tuple[DeviceRuntime, InMemoryActuatorAdapter, ListAud
 
 
 class PortRuntimeTests(unittest.TestCase):
+    def test_synthetic_scenario_exercises_all_degradation_modes(self) -> None:
+        config = parse_config(synthetic_config_dict())
+
+        summaries = run_synthetic_scenario(config)
+
+        self.assertEqual(
+            [summary["mode"] for summary in summaries],
+            [
+                "NORMAL",
+                "DEGRADED_HOLD",
+                "CONTROLLED_STOP",
+                "SAFE_HOLD",
+            ],
+        )
+        for summary in summaries:
+            self.assertTrue(summary["finite"])
+            self.assertTrue(summary["within_limits"])
+
     def test_runtime_calls_actuator_only_with_safe_command(self) -> None:
         runtime, actuator, audit = runtime_for(
             SequenceSensorAdapter([valid_frame()])

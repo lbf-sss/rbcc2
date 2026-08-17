@@ -152,7 +152,7 @@ alternatives = [["affected_load"]]
 loss_mode = "DEGRADED_HOLD"
 
 [capabilities.hand_quality]
-alternatives = [["left_handle_vertical"]]
+alternatives = [["left_handle_vertical", "right_handle_vertical"]]
 loss_mode = "DEGRADED_HOLD"
 
 [task_requirements.IDLE]
@@ -208,25 +208,29 @@ output_max = 1.0
 weight = 0.5
 
 [quality_margins.participation]
-role = "affected_load"
+roles = ["affected_load"]
+aggregation = "MEAN"
 boundary = 100.0
 sigma = 100.0
 direction = "ABOVE"
 
 [quality_margins.hand]
-role = "left_handle_vertical"
+roles = ["left_handle_vertical", "right_handle_vertical"]
+aggregation = "SUM"
 boundary = 100.0
 sigma = 100.0
 direction = "BELOW"
 
 [quality_margins.posture]
-role = "posture_margin"
+roles = ["posture_margin"]
+aggregation = "MEAN"
 boundary = 0.0
 sigma = 1.0
 direction = "ABOVE"
 
 [quality_margins.fatigue]
-role = "fatigue_margin"
+roles = ["fatigue_margin"]
+aggregation = "MEAN"
 boundary = 0.0
 sigma = 1.0
 direction = "ABOVE"

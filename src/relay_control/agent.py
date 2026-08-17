@@ -112,7 +112,7 @@ class AgentGateway:
             )
         else:
             response = self._dispatch(request)
-        if request_id:
+        if request_id and response.status is not AgentResponseStatus.REJECTED:
             self._responses[request_id] = (fingerprint, response)
         return response
 

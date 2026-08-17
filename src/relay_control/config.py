@@ -20,6 +20,12 @@ class MarginDirection(StrEnum):
     BELOW = "BELOW"
 
 
+class MarginAggregation(StrEnum):
+    SUM = "SUM"
+    MEAN = "MEAN"
+    MAX = "MAX"
+
+
 @dataclass(frozen=True)
 class MetadataConfig:
     configuration_id: str
@@ -60,7 +66,8 @@ class EvidenceSource:
 
 @dataclass(frozen=True)
 class MarginPolicy:
-    role: str
+    roles: tuple[str, ...]
+    aggregation: MarginAggregation
     boundary: float
     sigma: float
     direction: MarginDirection
@@ -279,15 +286,25 @@ def _parse_margins(
     result: dict[str, MarginPolicy] = {}
     for name, item_value in raw.items():
         item = _mapping(item_value, f"quality_margins.{name}")
-        role = _text(item, "role")
-        if role not in signals:
-            raise ConfigError(f"quality_margins.{name} references unknown role {role}")
+        roles = _text_list(item, "roles")
+        if not roles:
+            raise ConfigError(f"quality_margins.{name}.roles must not be empty")
+        unknown = set(roles).difference(signals)
+        if unknown:
+            raise ConfigError(
+                f"quality_margins.{name} references unknown roles: {sorted(unknown)}"
+            )
         try:
             direction = MarginDirection(_text(item, "direction"))
         except ValueError as exc:
             raise ConfigError(f"quality_margins.{name}.direction is invalid") from exc
+        try:
+            aggregation = MarginAggregation(_text(item, "aggregation"))
+        except ValueError as exc:
+            raise ConfigError(f"quality_margins.{name}.aggregation is invalid") from exc
         result[name] = MarginPolicy(
-            role=role,
+            roles=roles,
+            aggregation=aggregation,
             boundary=_number(item, "boundary"),
             sigma=_positive(item, "sigma"),
             direction=direction,
