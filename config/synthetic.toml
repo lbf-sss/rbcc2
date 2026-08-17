@@ -147,21 +147,29 @@ loss_mode = "DEGRADED_HOLD"
 alternatives = [["fatigue_margin"]]
 loss_mode = "DEGRADED_HOLD"
 
+[capabilities.participation_quality]
+alternatives = [["affected_load"]]
+loss_mode = "DEGRADED_HOLD"
+
+[capabilities.hand_quality]
+alternatives = [["left_handle_vertical"]]
+loss_mode = "DEGRADED_HOLD"
+
 [task_requirements.IDLE]
 required = []
 optional = []
 
 [task_requirements.STAND_UP]
 required = ["seat_feedback", "stand_phase"]
-optional = ["posture_quality", "fatigue_quality"]
+optional = ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"]
 
 [task_requirements.SIT_DOWN]
 required = ["seat_feedback", "stand_phase"]
-optional = ["posture_quality", "fatigue_quality"]
+optional = ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"]
 
 [task_requirements.GAIT]
 required = ["gait_intent", "wheel_feedback"]
-optional = ["posture_quality", "fatigue_quality"]
+optional = ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"]
 
 [task_requirements.SEATED_TRANSPORT]
 required = ["wheel_feedback"]

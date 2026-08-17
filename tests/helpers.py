@@ -3,6 +3,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from relay_control.model import SensorFrame, SignalFlag, SignalSample
+
 
 NOW_NS = 1_000_000_000
 
@@ -61,20 +63,28 @@ def synthetic_config_dict() -> dict[str, Any]:
                 "alternatives": [["fatigue_margin"]],
                 "loss_mode": "DEGRADED_HOLD",
             },
+            "participation_quality": {
+                "alternatives": [["affected_load"]],
+                "loss_mode": "DEGRADED_HOLD",
+            },
+            "hand_quality": {
+                "alternatives": [["left_handle_vertical"]],
+                "loss_mode": "DEGRADED_HOLD",
+            },
         },
         "task_requirements": {
             "IDLE": {"required": [], "optional": []},
             "STAND_UP": {
                 "required": ["seat_feedback", "stand_phase"],
-                "optional": ["posture_quality", "fatigue_quality"],
+                "optional": ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"],
             },
             "SIT_DOWN": {
                 "required": ["seat_feedback", "stand_phase"],
-                "optional": ["posture_quality", "fatigue_quality"],
+                "optional": ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"],
             },
             "GAIT": {
                 "required": ["gait_intent", "wheel_feedback"],
-                "optional": ["posture_quality", "fatigue_quality"],
+                "optional": ["participation_quality", "hand_quality", "posture_quality", "fatigue_quality"],
             },
             "SEATED_TRANSPORT": {
                 "required": ["wheel_feedback"],
@@ -144,3 +154,61 @@ def _binding(signal_id: str, unit: str, *, required: bool = True) -> dict[str, A
         "min_confidence": 0.8,
         "required": required,
     }
+
+
+def sample(
+    signal_id: str,
+    value: float,
+    unit: str,
+    *,
+    timestamp_ns: int = NOW_NS,
+    confidence: float = 1.0,
+    flags: frozenset[SignalFlag] = frozenset(),
+) -> SignalSample:
+    return SignalSample(
+        signal_id=signal_id,
+        value=value,
+        unit=unit,
+        timestamp_ns=timestamp_ns,
+        confidence=confidence,
+        calibration_version="synthetic-cal-v1",
+        source="synthetic-test",
+        flags=flags,
+    )
+
+
+def valid_frame(*, sequence: int = 1, now_ns: int = NOW_NS) -> SensorFrame:
+    values = {
+        "sim.seat.angle": sample("sim.seat.angle", 0.4, "rad", timestamp_ns=now_ns),
+        "sim.seat.velocity": sample("sim.seat.velocity", 0.1, "rad/s", timestamp_ns=now_ns),
+        "sim.seat.torque": sample("sim.seat.torque", 3.0, "N*m", timestamp_ns=now_ns),
+        "sim.seat.load": sample("sim.seat.load", 300.0, "N", timestamp_ns=now_ns),
+        "sim.foot.affected_load": sample("sim.foot.affected_load", 160.0, "N", timestamp_ns=now_ns),
+        "sim.foot.unaffected_load": sample("sim.foot.unaffected_load", 300.0, "N", timestamp_ns=now_ns),
+        "sim.imu.trunk_pitch": sample("sim.imu.trunk_pitch", 0.2, "rad", timestamp_ns=now_ns),
+        "sim.handle.left.forward": sample("sim.handle.left.forward", 5.0, "N", timestamp_ns=now_ns),
+        "sim.handle.right.forward": sample("sim.handle.right.forward", 5.0, "N", timestamp_ns=now_ns),
+        "sim.handle.left.vertical": sample("sim.handle.left.vertical", 30.0, "N", timestamp_ns=now_ns),
+        "sim.handle.right.vertical": sample("sim.handle.right.vertical", 30.0, "N", timestamp_ns=now_ns),
+        "sim.wheel.left.speed": sample("sim.wheel.left.speed", 0.1, "rad/s", timestamp_ns=now_ns),
+        "sim.wheel.right.speed": sample("sim.wheel.right.speed", 0.1, "rad/s", timestamp_ns=now_ns),
+        "camera.posture_margin": sample("camera.posture_margin", 0.8, "1", timestamp_ns=now_ns),
+        "wearable.fatigue_margin": sample("wearable.fatigue_margin", 0.8, "1", timestamp_ns=now_ns),
+        "sim.actuator.health": sample("sim.actuator.health", 1.0, "bool", timestamp_ns=now_ns),
+        "sim.brake.health": sample("sim.brake.health", 1.0, "bool", timestamp_ns=now_ns),
+    }
+    return SensorFrame(sequence=sequence, captured_at_ns=now_ns, samples=values)
+
+
+def frame_without(*signal_ids: str, now_ns: int = NOW_NS) -> SensorFrame:
+    original = valid_frame(now_ns=now_ns)
+    removed = set(signal_ids)
+    return SensorFrame(
+        sequence=original.sequence,
+        captured_at_ns=original.captured_at_ns,
+        samples={
+            signal_id: value
+            for signal_id, value in original.samples.items()
+            if signal_id not in removed
+        },
+    )
