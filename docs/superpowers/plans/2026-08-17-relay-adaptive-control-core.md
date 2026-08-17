@@ -518,7 +518,7 @@ git add README.md src/relay_control/__init__.py src/relay_control/demo.py tests/
 git commit -m "docs: add synthetic demo and integration guide"
 ```
 
-- [ ] **Step 6: Push the verified main branch**
+- [x] **Step 6: Push the verified main branch**
 
 Run:
 
