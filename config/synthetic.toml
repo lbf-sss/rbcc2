@@ -1,0 +1,259 @@
+# SYNTHETIC SOFTWARE DEMO ONLY. NOT VALIDATED OR APPROVED FOR HUMAN USE.
+[metadata]
+configuration_id = "synthetic-demo-v1"
+version = 1
+human_use = false
+
+[signals.seat_angle]
+signal_id = "sim.seat.angle"
+unit = "rad"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.seat_velocity]
+signal_id = "sim.seat.velocity"
+unit = "rad/s"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.seat_torque]
+signal_id = "sim.seat.torque"
+unit = "N*m"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.seat_load]
+signal_id = "sim.seat.load"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.affected_load]
+signal_id = "sim.foot.affected_load"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.unaffected_load]
+signal_id = "sim.foot.unaffected_load"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.trunk_pitch]
+signal_id = "sim.imu.trunk_pitch"
+unit = "rad"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.left_handle_forward]
+signal_id = "sim.handle.left.forward"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.right_handle_forward]
+signal_id = "sim.handle.right.forward"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.left_handle_vertical]
+signal_id = "sim.handle.left.vertical"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.right_handle_vertical]
+signal_id = "sim.handle.right.vertical"
+unit = "N"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.left_wheel_speed]
+signal_id = "sim.wheel.left.speed"
+unit = "rad/s"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.right_wheel_speed]
+signal_id = "sim.wheel.right.speed"
+unit = "rad/s"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.posture_margin]
+signal_id = "camera.posture_margin"
+unit = "1"
+max_age_s = 0.1
+min_confidence = 0.8
+required = false
+
+[signals.fatigue_margin]
+signal_id = "wearable.fatigue_margin"
+unit = "1"
+max_age_s = 0.1
+min_confidence = 0.8
+required = false
+
+[signals.actuator_health]
+signal_id = "sim.actuator.health"
+unit = "bool"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[signals.brake_health]
+signal_id = "sim.brake.health"
+unit = "bool"
+max_age_s = 0.1
+min_confidence = 0.8
+required = true
+
+[capabilities.seat_feedback]
+alternatives = [["seat_angle", "seat_velocity", "seat_torque"]]
+loss_mode = "SAFE_HOLD"
+
+[capabilities.stand_phase]
+alternatives = [["seat_load", "trunk_pitch"], ["seat_load", "affected_load", "unaffected_load"]]
+loss_mode = "CONTROLLED_STOP"
+
+[capabilities.gait_intent]
+alternatives = [["left_handle_forward", "right_handle_forward"]]
+loss_mode = "CONTROLLED_STOP"
+
+[capabilities.wheel_feedback]
+alternatives = [["left_wheel_speed", "right_wheel_speed", "brake_health"]]
+loss_mode = "SAFE_HOLD"
+
+[capabilities.posture_quality]
+alternatives = [["posture_margin"]]
+loss_mode = "DEGRADED_HOLD"
+
+[capabilities.fatigue_quality]
+alternatives = [["fatigue_margin"]]
+loss_mode = "DEGRADED_HOLD"
+
+[task_requirements.IDLE]
+required = []
+optional = []
+
+[task_requirements.STAND_UP]
+required = ["seat_feedback", "stand_phase"]
+optional = ["posture_quality", "fatigue_quality"]
+
+[task_requirements.SIT_DOWN]
+required = ["seat_feedback", "stand_phase"]
+optional = ["posture_quality", "fatigue_quality"]
+
+[task_requirements.GAIT]
+required = ["gait_intent", "wheel_feedback"]
+optional = ["posture_quality", "fatigue_quality"]
+
+[task_requirements.SEATED_TRANSPORT]
+required = ["wheel_feedback"]
+optional = []
+
+[[estimators.phase]]
+role = "seat_angle"
+input_min = 0.0
+input_max = 1.0
+output_min = 0.0
+output_max = 1.0
+weight = 1.0
+
+[[estimators.phase]]
+role = "seat_load"
+input_min = 600.0
+input_max = 0.0
+output_min = 0.0
+output_max = 1.0
+weight = 0.5
+
+[[estimators.intent]]
+role = "trunk_pitch"
+input_min = 0.0
+input_max = 0.5
+output_min = 0.0
+output_max = 1.0
+weight = 1.0
+
+[[estimators.intent]]
+role = "seat_load"
+input_min = 600.0
+input_max = 0.0
+output_min = 0.0
+output_max = 1.0
+weight = 0.5
+
+[quality_margins.participation]
+role = "affected_load"
+boundary = 100.0
+sigma = 100.0
+direction = "ABOVE"
+
+[quality_margins.hand]
+role = "left_handle_vertical"
+boundary = 100.0
+sigma = 100.0
+direction = "BELOW"
+
+[quality_margins.posture]
+role = "posture_margin"
+boundary = 0.0
+sigma = 1.0
+direction = "ABOVE"
+
+[quality_margins.fatigue]
+role = "fatigue_margin"
+boundary = 0.0
+sigma = 1.0
+direction = "ABOVE"
+
+[adaptive]
+k_up = 0.8
+k_down = 0.2
+alpha_min = 0.0
+alpha_max = 1.0
+initial_alpha = 0.4
+max_slew_per_s = 0.5
+progress_sigma = 0.2
+safe_progress_curve = [[0.0, 0.05], [1.0, 0.02]]
+
+[seat]
+device_torque_curve = [[0.0, 1.0], [1.0, 2.0]]
+support_torque_curve = [[0.0, 12.0], [0.5, 20.0], [1.0, 5.0]]
+descent_safe_speed_curve = [[0.0, 0.1], [1.0, 0.1]]
+descent_damping = 4.0
+
+[wheel]
+virtual_mass = 20.0
+linear_damping = 10.0
+virtual_inertia = 8.0
+yaw_damping = 4.0
+wheel_radius_m = 0.15
+track_width_m = 0.55
+max_linear_m_s = 0.5
+max_yaw_rad_s = 0.8
+max_wheel_accel_rad_s2 = 2.0
+controlled_stop_decel_rad_s2 = 3.0
+
+[limits]
+seat_torque_min_nm = -30.0
+seat_torque_max_nm = 30.0
+wheel_speed_max_rad_s = 4.0
+candidate_ttl_s = 0.1
+max_dt_s = 0.2
