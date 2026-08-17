@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from types import MappingProxyType
 
 from relay_control.config import ControlConfig
@@ -249,7 +250,11 @@ class ControlEngine:
         )
 
     def _cycle_error(self, cycle: ControlInput) -> str | None:
-        if cycle.dt_s <= 0.0 or cycle.dt_s > self._config.limits.max_dt_s:
+        if (
+            not math.isfinite(cycle.dt_s)
+            or cycle.dt_s <= 0.0
+            or cycle.dt_s > self._config.limits.max_dt_s
+        ):
             return "invalid_cycle_time"
         if (
             self._last_timestamp_ns is not None

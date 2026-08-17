@@ -264,13 +264,21 @@ def _parse_evidence(
         input_max = _number(item, "input_max")
         if input_min == input_max:
             raise ConfigError(f"estimators.{key} input range must not be zero")
+        output_min = _number(item, "output_min")
+        output_max = _number(item, "output_max")
+        if not (
+            0.0 <= output_min <= 1.0 and 0.0 <= output_max <= 1.0
+        ):
+            raise ConfigError(
+                f"estimators.{key} output values must be in [0, 1]"
+            )
         result.append(
             EvidenceSource(
                 role=role,
                 input_min=input_min,
                 input_max=input_max,
-                output_min=_number(item, "output_min"),
-                output_max=_number(item, "output_max"),
+                output_min=output_min,
+                output_max=output_max,
                 weight=_positive(item, "weight"),
             )
         )

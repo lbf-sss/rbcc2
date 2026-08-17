@@ -51,6 +51,30 @@ def runtime_for(sensor) -> tuple[DeviceRuntime, InMemoryActuatorAdapter, ListAud
 
 
 class PortRuntimeTests(unittest.TestCase):
+    def test_audit_failure_is_reported_without_escaping_control_loop(self) -> None:
+        class FailingAudit:
+            def append(self, event) -> None:
+                raise OSError("synthetic audit failure")
+
+        config = parse_config(synthetic_config_dict())
+        runtime = DeviceRuntime(
+            config,
+            SequenceSensorAdapter([valid_frame()]),
+            InMemoryActuatorAdapter(),
+            FailingAudit(),
+        )
+
+        result = runtime.cycle(
+            Task.STAND_UP,
+            operator_input(),
+            safety_context(),
+            NOW_NS,
+            0.02,
+        )
+
+        self.assertFalse(result.audit_written)
+        self.assertIn("audit_port_error:OSError", result.runtime_reasons)
+
     def test_synthetic_scenario_exercises_all_degradation_modes(self) -> None:
         config = parse_config(synthetic_config_dict())
 

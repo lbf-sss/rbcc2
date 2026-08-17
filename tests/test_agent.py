@@ -104,6 +104,18 @@ class AgentGatewayTests(unittest.TestCase):
 
         self.assertEqual(first, second)
 
+    def test_accepted_intent_is_detached_from_nested_request_payload(self) -> None:
+        health = {"fatigue": {"level": "mild"}}
+        response = self.gateway.handle(
+            request("SUBMIT_HEALTH_CONTEXT", health)
+        )
+
+        health["fatigue"]["level"] = "severe"
+
+        self.assertEqual(response.intent.payload["fatigue"]["level"], "mild")
+        with self.assertRaises(TypeError):
+            response.intent.payload["fatigue"]["level"] = "changed"
+
     def test_reused_request_id_with_different_body_is_rejected(self) -> None:
         self.gateway.handle(request("PAUSE_TASK", {}))
 

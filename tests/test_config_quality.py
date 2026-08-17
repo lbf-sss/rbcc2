@@ -23,6 +23,13 @@ class ConfigContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "k_up"):
             parse_config(raw)
 
+    def test_config_rejects_estimator_output_outside_unit_interval(self) -> None:
+        raw = synthetic_config_dict()
+        raw["estimators"]["phase"][0]["output_max"] = 1.5
+
+        with self.assertRaisesRegex(ConfigError, "output"):
+            parse_config(raw)
+
 
 class SignalQualityTests(unittest.TestCase):
     def setUp(self) -> None:

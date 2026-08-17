@@ -178,13 +178,15 @@ class AgentGateway:
     def _dispatch(self, request: Mapping[str, Any]) -> AgentResponse:
         request_id = request["request_id"]
         request_type = AgentRequestType(request["request_type"])
-        payload = MappingProxyType(dict(request["payload"]))
+        payload = _freeze_json(request["payload"])
+        if not isinstance(payload, Mapping):
+            raise RuntimeError("validated Agent payload is not an object")
 
         if request_type is AgentRequestType.QUERY_STATUS:
             return AgentResponse(
                 request_id=request_id,
                 status=AgentResponseStatus.COMPLETED,
-                payload=MappingProxyType(dict(self._status_provider())),
+                payload=_freeze_json(self._status_provider()),
             )
         if request_type is AgentRequestType.REQUEST_TASK:
             try:
@@ -258,6 +260,16 @@ def _find_forbidden_key(
             if nested is not None:
                 return nested
     return None
+
+
+def _freeze_json(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {str(key): _freeze_json(child) for key, child in value.items()}
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_json(child) for child in value)
+    return value
 
 
 def _supported_version(value: Any) -> bool:

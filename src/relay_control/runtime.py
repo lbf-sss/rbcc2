@@ -26,6 +26,8 @@ class RuntimeCycleResult:
     decision: ControlDecision
     safe_command: SafeCommand
     receipt: ActuatorReceipt
+    audit_written: bool
+    runtime_reasons: tuple[str, ...]
 
 
 class DeviceRuntime:
@@ -51,11 +53,13 @@ class DeviceRuntime:
         dt_s: float,
     ) -> RuntimeCycleResult:
         deadline_ns = now_ns + max(int(dt_s * 1_000_000_000), 0)
+        runtime_reasons: list[str] = []
         sensor_error: str | None = None
         try:
             frame = self._sensor.read(deadline_ns)
         except Exception as exc:
             sensor_error = f"sensor_port_error:{type(exc).__name__}"
+            runtime_reasons.append(sensor_error)
             frame = SensorFrame(
                 sequence=0,
                 captured_at_ns=now_ns,
@@ -99,6 +103,7 @@ class DeviceRuntime:
             receipt = self._actuator.apply(safe_command, deadline_ns)
         except Exception as exc:
             reason = f"actuator_port_error:{type(exc).__name__}"
+            runtime_reasons.append(reason)
             safe_command = _failed_actuator_command(safe_command, reason)
             receipt = ActuatorReceipt(
                 sequence=safe_command.sequence,
@@ -120,11 +125,21 @@ class DeviceRuntime:
                 "reasons": list(safe_command.reasons),
             },
         )
+        audit_written = True
         try:
             self._audit.append(event)
-        except Exception:
-            pass
-        return RuntimeCycleResult(decision, safe_command, receipt)
+        except Exception as exc:
+            audit_written = False
+            runtime_reasons.append(
+                f"audit_port_error:{type(exc).__name__}"
+            )
+        return RuntimeCycleResult(
+            decision,
+            safe_command,
+            receipt,
+            audit_written,
+            tuple(runtime_reasons),
+        )
 
 
 def _failed_actuator_command(

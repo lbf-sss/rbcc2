@@ -97,6 +97,27 @@ class SafetyGuard:
             reasons.append("task_not_allowed")
         if candidate.task in {Task.STAND_UP, Task.SIT_DOWN, Task.SEATED_TRANSPORT} and not context.seat_locked:
             reasons.append("seat_not_locked")
+        wheel_motion = (
+            candidate.left_wheel_rad_s != 0.0
+            or candidate.right_wheel_rad_s != 0.0
+        )
+        seat_command = (
+            candidate.seat_mode is SeatCommandMode.TORQUE
+            or candidate.seat_torque_nm != 0.0
+        )
+        if candidate.task in {Task.STAND_UP, Task.SIT_DOWN} and wheel_motion:
+            reasons.append("wheel_command_not_allowed_for_task")
+        if candidate.task in {Task.GAIT, Task.SEATED_TRANSPORT} and seat_command:
+            reasons.append("seat_command_not_allowed_for_task")
+        if candidate.task is Task.IDLE and (wheel_motion or seat_command):
+            reasons.append("idle_motion_not_allowed")
+        if (
+            candidate.seat_mode is not SeatCommandMode.TORQUE
+            and candidate.seat_torque_nm != 0.0
+        ):
+            reasons.append("seat_torque_without_torque_mode")
+        if candidate.brake_request and wheel_motion:
+            reasons.append("brake_motion_conflict")
         return tuple(reasons)
 
     def _safe_hold(

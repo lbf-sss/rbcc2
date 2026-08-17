@@ -130,6 +130,14 @@ class ControlEngineTests(unittest.TestCase):
         self.assertEqual(decision.candidate.seat_mode, SeatCommandMode.HOLD)
         self.assertIn("invalid_cycle_time", decision.reasons)
 
+    def test_nonfinite_cycle_time_returns_safe_hold(self) -> None:
+        decision = self.engine.step(
+            control_input(Task.STAND_UP, dt_s=float("nan"))
+        )
+
+        self.assertEqual(decision.mode, RuntimeMode.SAFE_HOLD)
+        self.assertIn("invalid_cycle_time", decision.reasons)
+
 
 class SafetyGuardTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -160,20 +168,31 @@ class SafetyGuardTests(unittest.TestCase):
         self.assertEqual(result.seat_mode, SeatCommandMode.HOLD)
         self.assertIn("nonfinite_candidate", result.reasons)
 
-    def test_candidate_is_clamped_to_configured_limits(self) -> None:
+    def test_seat_candidate_is_clamped_to_configured_limit(self) -> None:
         unsafe = replace(
             self.candidate,
             seat_torque_nm=100.0,
+        )
+
+        result = self.guard.review(unsafe, healthy_safety_context(), NOW_NS)
+
+        self.assertEqual(result.seat_torque_nm, self.config.limits.seat_torque_max_nm)
+        self.assertIn("seat_torque_clamped", result.reasons)
+
+    def test_gait_candidate_is_clamped_to_wheel_speed_limit(self) -> None:
+        unsafe = replace(
+            self.candidate,
+            task=Task.GAIT,
+            seat_mode=SeatCommandMode.DISABLED,
+            seat_torque_nm=0.0,
             left_wheel_rad_s=-10.0,
             right_wheel_rad_s=10.0,
         )
 
         result = self.guard.review(unsafe, healthy_safety_context(), NOW_NS)
 
-        self.assertEqual(result.seat_torque_nm, self.config.limits.seat_torque_max_nm)
         self.assertEqual(result.left_wheel_rad_s, -self.config.limits.wheel_speed_max_rad_s)
         self.assertEqual(result.right_wheel_rad_s, self.config.limits.wheel_speed_max_rad_s)
-        self.assertIn("seat_torque_clamped", result.reasons)
         self.assertIn("wheel_speed_clamped", result.reasons)
 
     def test_expired_candidate_is_rejected(self) -> None:
@@ -185,6 +204,53 @@ class SafetyGuardTests(unittest.TestCase):
 
         self.assertEqual(result.mode, RuntimeMode.SAFE_HOLD)
         self.assertIn("candidate_expired", result.reasons)
+
+    def test_gait_candidate_cannot_command_seat_torque(self) -> None:
+        inconsistent = replace(
+            self.candidate,
+            task=Task.GAIT,
+            seat_mode=SeatCommandMode.TORQUE,
+            seat_torque_nm=5.0,
+        )
+
+        result = self.guard.review(
+            inconsistent, healthy_safety_context(), NOW_NS
+        )
+
+        self.assertEqual(result.mode, RuntimeMode.SAFE_HOLD)
+        self.assertIn("seat_command_not_allowed_for_task", result.reasons)
+
+    def test_stand_candidate_cannot_command_wheel_motion(self) -> None:
+        inconsistent = replace(
+            self.candidate,
+            left_wheel_rad_s=0.5,
+            right_wheel_rad_s=0.5,
+        )
+
+        result = self.guard.review(
+            inconsistent, healthy_safety_context(), NOW_NS
+        )
+
+        self.assertEqual(result.mode, RuntimeMode.SAFE_HOLD)
+        self.assertIn("wheel_command_not_allowed_for_task", result.reasons)
+
+    def test_brake_request_cannot_coexist_with_wheel_motion(self) -> None:
+        inconsistent = replace(
+            self.candidate,
+            task=Task.GAIT,
+            seat_mode=SeatCommandMode.DISABLED,
+            seat_torque_nm=0.0,
+            left_wheel_rad_s=0.5,
+            right_wheel_rad_s=0.5,
+            brake_request=True,
+        )
+
+        result = self.guard.review(
+            inconsistent, healthy_safety_context(), NOW_NS
+        )
+
+        self.assertEqual(result.mode, RuntimeMode.SAFE_HOLD)
+        self.assertIn("brake_motion_conflict", result.reasons)
 
 
 if __name__ == "__main__":
